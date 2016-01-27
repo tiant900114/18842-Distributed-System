@@ -45,6 +45,7 @@ public class MessagePasser {
 		
 		try {
 			s = new Socket(ip, port);
+			System.out.println("Connect to " + port + " .");
 			sockets.put(dest, s);
 			seqnums.put(dest, 0);
 			n.set_connected();
@@ -69,6 +70,7 @@ public class MessagePasser {
 			name = (String) m.get("name");
 			
 			if (name.equals(self)) {
+				System.out.println("My name is " + self);
 				flag = true;
 				localIP = ip;
 				localPort = port;
@@ -94,22 +96,25 @@ public class MessagePasser {
 		message.set_source(self);
 		
 		String dest = message.get_dest();
-		int seqnum = seqnums.get(dest);
-		message.set_seqNum(seqnum);
-		seqnums.put(dest, seqnum+1);
 		
 		Node n = hosts.get(dest);
 		if (!n.is_connected())
 			make_connection(dest, n);
 		
+		int seqnum = seqnums.get(dest);
+		message.set_seqNum(seqnum);
+		seqnums.put(dest, seqnum+1);
+		
 		try {
 			OutputStream out = sockets.get(dest).getOutputStream();
-			ObjectOutputStream os = new ObjectOutputStream(new BufferedOutputStream(out));
+			ObjectOutputStream os = new ObjectOutputStream(out);
 			os.writeObject(message);
+			os.flush();
 		} catch (Exception e) {
 			System.out.println("Unable to send message to " + dest + ", try again later.");
 			n.unset_connected();
 			sockets.remove(dest);
+			seqnums.remove(dest);
 		}
 	}
 	

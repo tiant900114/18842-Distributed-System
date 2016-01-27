@@ -12,16 +12,20 @@ public class ServerThread implements Runnable {
 	{
 		try {
 			socket = new ServerSocket(port);
+			System.out.println("Listening on port " + port);
 			this.q = q;
 		} catch (Exception e) {
-			
+			System.out.println("Unable to listen on port " + port);
+			System.exit(1);
 		}
+		
 	}
 	
 	public void run() {
 		 try {
 			 while (true) {
 				 Socket clientSocket = socket.accept();
+				 System.out.println("New connection accepted.");
 				 WorkerThread wt = new WorkerThread(clientSocket, q);
 				 new Thread(wt).start();
 			 }

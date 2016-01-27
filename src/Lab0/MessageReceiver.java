@@ -1,5 +1,7 @@
 package Lab0;
 
+import java.io.*;
+
 public class MessageReceiver implements Runnable {
 	
 	MessagePasser mp;
