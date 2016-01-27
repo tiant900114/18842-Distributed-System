@@ -30,4 +30,14 @@ public class Message implements Serializable {
 	{
 		return dest;
 	}
+	
+	public String get_data()
+	{
+		return (String)data;
+	}
+	
+	public String get_src()
+	{
+		return src;
+	}
 }

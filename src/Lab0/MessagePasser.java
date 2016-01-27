@@ -1,6 +1,7 @@
 package Lab0;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.io.*;
 import java.net.*;
 
@@ -9,10 +10,11 @@ import org.yaml.snakeyaml.Yaml;
 public class MessagePasser {
 	List<Map<String, String>> config =  null;
 	String self = "";
-	int seqnum;
 	
 	Map<String, Socket> sockets = new HashMap<String, Socket>();
 	Map<String, Node> hosts = new HashMap<String, Node>();
+	Map<String, Integer> seqnums = new HashMap<String, Integer>();	
+	ConcurrentLinkedQueue<Message> q = new ConcurrentLinkedQueue<Message>();
 	
 	private void ParseConfigFile(String filename)
 	{	
@@ -44,6 +46,7 @@ public class MessagePasser {
 		try {
 			s = new Socket(ip, port);
 			sockets.put(dest, s);
+			seqnums.put(dest, 0);
 			n.set_connected();
 			
 		} catch (Exception e) {
@@ -53,7 +56,7 @@ public class MessagePasser {
 	
 	public MessagePasser(String configuration_filename, String local_name)
 	{
-		String localIP = "", ip, name;
+		String ip, name, localIP = "";
 		int localPort = 0, port;
 		self = local_name;
 		
@@ -82,16 +85,19 @@ public class MessagePasser {
 		}
 		
 		//run the server thread
-		ServerThread st = new ServerThread(localIP, localPort);
+		ServerThread st = new ServerThread(localIP, localPort, q);
 		new Thread(st).start();
 	}
 	
-	void send(Message message)
+	public void send(Message message)
 	{
 		message.set_source(self);
-		message.set_seqNum(seqnum++);
 		
 		String dest = message.get_dest();
+		int seqnum = seqnums.get(dest);
+		message.set_seqNum(seqnum);
+		seqnums.put(dest, seqnum+1);
+		
 		Node n = hosts.get(dest);
 		if (!n.is_connected())
 			make_connection(dest, n);
@@ -109,6 +115,9 @@ public class MessagePasser {
 	
 	public Message receive()
 	{
-		return null;
+		Message m = null;
+		if (!q.isEmpty())
+			m = q.poll();
+		return m;
 	}
 }
