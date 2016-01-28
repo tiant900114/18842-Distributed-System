@@ -1,8 +1,30 @@
 package Lab0;
 
+import java.io.FileOutputStream;
+import java.net.*;
 import java.util.*;
 
 public class Main {
+	private static String fetch_config_file()
+	{
+		String filename = "config.txt";
+		
+		try {
+			URLConnection con = new URL("https://www.andrew.cmu.edu/user/tiant/testconfig.txt").openConnection();
+			Scanner s = new Scanner(con.getInputStream());
+			s.useDelimiter("\\Z");
+			String content = s.next();
+			s.close();
+			FileOutputStream out = new FileOutputStream(filename);
+			out.write(content.getBytes());
+			out.close();
+		} catch (Exception e) {
+			System.out.println("Unable to fetch configuration file");
+			System.exit(1);
+		}
+		
+		return filename;
+	}
 
 	public static void main(String[] args) {
 		
@@ -11,8 +33,10 @@ public class Main {
 			System.exit(1);
 		}
 		
+		String filename = fetch_config_file();
+		
 		String self = args[0];	
-		MessagePasser mp = new MessagePasser("testconfig.txt", self);
+		MessagePasser mp = new MessagePasser(filename, self);
 		
 		String input = "";
 		Scanner s = new Scanner(System.in);
