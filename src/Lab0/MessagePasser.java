@@ -17,7 +17,9 @@ public class MessagePasser {
 	ConcurrentMap<String, Integer> seqnums = new ConcurrentHashMap<String, Integer>();
 	ConcurrentLinkedQueue<Message> q = new ConcurrentLinkedQueue<Message>();
 	// to handle delayed messages
-	Queue<Message> delayedMessage = new LinkedList<Message>();
+	Queue<delayedQueueObject> delayedMessages = new LinkedList<delayedQueueObject>();
+	Queue<delayedQueueObject> rcvDelayedMessages = new LinkedList<delayedQueueObject>();
+	
 	
 	Map<String, Node> hosts = new HashMap<String, Node>();
 	
@@ -87,7 +89,6 @@ public class MessagePasser {
 	public void send(Message message)
 	{	
 		String dest = message.get_dest();
-		boolean delayed = false;
 		// send rules
 		for(Map m: sendRules){
 			String action = "";
@@ -135,7 +136,13 @@ public class MessagePasser {
 			}
 			
 			if(action.equals("delay")){
-				
+				if(src.equals(self)){
+					delayedQueueObject dqo = new delayedQueueObject();
+					dqo.delayedMsg = message;
+					dqo.destination = dest;
+					delayedMessages.add(dqo);
+					return;
+				}
 			}
 		}
 		
@@ -143,29 +150,88 @@ public class MessagePasser {
 			System.out.println("Unknown host " + dest);
 		}
 		else {
-			int seqnum = seqnums.get(dest);
-			message.set_seqNum(seqnum);
-			message.set_source(self);
-			seqnums.put(dest, seqnum+1);
-			
-			try {
-				OutputStream out = sockets.get(dest).getOutputStream();
-				ObjectOutputStream os = new ObjectOutputStream(out);
-				os.writeObject(message);
-				os.flush();
-			} catch (Exception e) {
-				System.out.println("Unable to send message to " + dest + ", try again later.");
-				sockets.remove(dest);
-				seqnums.remove(dest);
+			delayedQueueObject dqo = new delayedQueueObject();
+			dqo.delayedMsg = message;
+			dqo.destination = dest;
+			delayedMessages.add(dqo);			
+			int seqnum;
+			while(!delayedMessages.isEmpty()){
+				dqo = delayedMessages.poll();
+				Message currMsg = dqo.delayedMsg;
+				String currDest = dqo.destination;
+				seqnum = seqnums.get(currDest);
+				currMsg.set_seqNum(seqnum);
+				currMsg.set_source(self);
+				seqnums.put(currDest, seqnum+1);
+				
+				try {
+					OutputStream out = sockets.get(currDest).getOutputStream();
+					ObjectOutputStream os = new ObjectOutputStream(out);
+					os.writeObject(currMsg);
+					os.flush();
+				} catch (Exception e) {
+					System.out.println("Unable to send message to " + dest + ", try again later.");
+					sockets.remove(currDest);
+					seqnums.remove(currDest);
+				}				
 			}
 		}
 	}
 	
-	public Message receive()
-	{
-		Message m = null;
-		if (!q.isEmpty())
-			m = q.poll();
+	public Message receive() {
+
+		for(Map m: recvRules){
+			String action = "";
+			String src = "";
+			String dst = "";
+			String kind = "";
+			int seqNo = 0;
+			try{
+				action = (String)m.get("action");
+			}
+			catch(Exception e){}
+			try{
+				src = (String)m.get("src");
+			}
+			catch(Exception e){}
+			try{
+				dst = (String)m.get("dest");
+			}
+			catch(Exception e){}
+			try{
+				kind = (String)m.get("kind");
+			}
+			catch(Exception e){}
+			try{
+				seqNo = (int)m.get("seqNo");
+			}
+			catch(Exception e){}
+
+			Message currMsg = null;
+			if (!q.isEmpty())
+				currMsg = q.poll();
+			else
+				return currMsg;
+
+			String msgSrc = currMsg.get_src();
+			if(action.equals("delay")){
+				if(src.equals(msgSrc)){
+					delayedQueueObject dqo = new delayedQueueObject();
+					dqo.delayedMsg = currMsg;
+					dqo.destination = self;
+					rcvDelayedMessages.add(dqo);
+					return null;
+				}
+			}
+		}
+
+		
+		
 		return m;
 	}
+}
+
+class delayedQueueObject{
+	Message delayedMsg;
+	String destination;
 }
