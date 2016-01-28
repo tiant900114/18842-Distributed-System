@@ -9,11 +9,15 @@ import org.yaml.snakeyaml.Yaml;
 
 public class MessagePasser {
 	List<Map<String, String>> config =  null;
+	List<Map<String, String>> sendRules =  null;
+	List<Map<String, String>> recvRules =  null;
 	String self = "";
 	
 	ConcurrentMap<String, Socket> sockets = new ConcurrentHashMap<String, Socket>();
 	ConcurrentMap<String, Integer> seqnums = new ConcurrentHashMap<String, Integer>();
 	ConcurrentLinkedQueue<Message> q = new ConcurrentLinkedQueue<Message>();
+	// to handle delayed messages
+	Queue<Message> delayedMessage = new LinkedList<Message>();
 	
 	Map<String, Node> hosts = new HashMap<String, Node>();
 	
@@ -32,6 +36,8 @@ public class MessagePasser {
 			//parse the input data
 			Map<String, Object> m0 = (Map<String, Object>) data;
 			config = (List<Map<String, String>>) m0.get("configuration");
+			sendRules = (List<Map<String, String>>) m0.get("sendRules");
+			recvRules = (List<Map<String, String>>) m0.get("receiveRules");
 			
 		} catch (Exception ex) {
 			System.out.println("Exception: " + ex);
@@ -81,6 +87,58 @@ public class MessagePasser {
 	public void send(Message message)
 	{	
 		String dest = message.get_dest();
+		boolean delayed = false;
+		// send rules
+		for(Map m: sendRules){
+			String action = "";
+			String src = "";
+			String dst = "";
+			String kind = "";
+			int seqNo = 0;
+			try{
+				action = (String)m.get("action");
+			}
+			catch(Exception e){}
+			try{
+				src = (String)m.get("src");
+			}
+			catch(Exception e){}
+			try{
+				dst = (String)m.get("dest");
+			}
+			catch(Exception e){}
+			try{
+				kind = (String)m.get("kind");
+			}
+			catch(Exception e){}
+			try{
+				seqNo = (int)m.get("seqNo");
+			}
+			catch(Exception e){}
+			
+			if(action.equals("drop")){
+				if(src.equals(self)){
+					if(dst.equals(dest)){
+						if(seqNo == seqnums.get(dest)){
+							return;
+						}
+					}
+				}
+			}
+			
+			if(action.equals("dropAfter")){
+				if(src.equals(self)){
+					if(seqNo > seqnums.get(dest)){
+						return;
+					}
+				}
+			}
+			
+			if(action.equals("delay")){
+				
+			}
+		}
+		
 		if (!sockets.containsKey(dest)) {
 			System.out.println("Unknown host " + dest);
 		}
