@@ -1,7 +1,7 @@
 package Lab0;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
 import java.io.*;
 import java.net.*;
 
@@ -11,10 +11,12 @@ public class MessagePasser {
 	List<Map<String, String>> config =  null;
 	String self = "";
 	
-	Map<String, Socket> sockets = new HashMap<String, Socket>();
-	Map<String, Node> hosts = new HashMap<String, Node>();
-	Map<String, Integer> seqnums = new HashMap<String, Integer>();	
+	ConcurrentMap<String, Socket> sockets = new ConcurrentHashMap<String, Socket>();
+	ConcurrentMap<String, Integer> seqnums = new ConcurrentHashMap<String, Integer>();
 	ConcurrentLinkedQueue<Message> q = new ConcurrentLinkedQueue<Message>();
+	
+	Map<String, Node> hosts = new HashMap<String, Node>();
+	
 	
 	private void ParseConfigFile(String filename)
 	{	
@@ -33,25 +35,6 @@ public class MessagePasser {
 			
 		} catch (Exception ex) {
 			System.out.println("Exception: " + ex);
-		}
-	}
-	
-	private void make_connection(String dest, Node n)
-	{
-		Socket s = null;
-		
-		String ip = n.get_ip();
-		int port = n.get_port();
-		
-		try {
-			s = new Socket(ip, port);
-			System.out.println("Connect to " + port + " .");
-			sockets.put(dest, s);
-			seqnums.put(dest, 0);
-			n.set_connected();
-			
-		} catch (Exception e) {
-			System.out.println("Connection failed, please try again later.");
 		}
 	}
 	
@@ -75,9 +58,8 @@ public class MessagePasser {
 				localIP = ip;
 				localPort = port;
 			}
-			
-			else {
-				hosts.put(name, new Node(ip, port, name));
+			else if (name.compareTo(self) > 0){
+				hosts.put(name, new Node(ip, port));
 			}
 		}
 		
@@ -86,35 +68,38 @@ public class MessagePasser {
 			System.exit(1);
 		}
 		
+		//Start new threads to connect to other nodes
+		for (Map.Entry<String, Node> e : hosts.entrySet()) {
+			new Thread(new ClientThread(e.getKey(), e.getValue(), sockets, self, seqnums, q)).start();
+		}
+		
 		//run the server thread
-		ServerThread st = new ServerThread(localIP, localPort, q);
+		ServerThread st = new ServerThread(localIP, localPort, q, sockets, seqnums);
 		new Thread(st).start();
 	}
 	
 	public void send(Message message)
-	{
-		message.set_source(self);
-		
+	{	
 		String dest = message.get_dest();
-		
-		Node n = hosts.get(dest);
-		if (!n.is_connected())
-			make_connection(dest, n);
-		
-		int seqnum = seqnums.get(dest);
-		message.set_seqNum(seqnum);
-		seqnums.put(dest, seqnum+1);
-		
-		try {
-			OutputStream out = sockets.get(dest).getOutputStream();
-			ObjectOutputStream os = new ObjectOutputStream(out);
-			os.writeObject(message);
-			os.flush();
-		} catch (Exception e) {
-			System.out.println("Unable to send message to " + dest + ", try again later.");
-			n.unset_connected();
-			sockets.remove(dest);
-			seqnums.remove(dest);
+		if (!sockets.containsKey(dest)) {
+			System.out.println("Unknown host " + dest);
+		}
+		else {
+			int seqnum = seqnums.get(dest);
+			message.set_seqNum(seqnum);
+			message.set_source(self);
+			seqnums.put(dest, seqnum+1);
+			
+			try {
+				OutputStream out = sockets.get(dest).getOutputStream();
+				ObjectOutputStream os = new ObjectOutputStream(out);
+				os.writeObject(message);
+				os.flush();
+			} catch (Exception e) {
+				System.out.println("Unable to send message to " + dest + ", try again later.");
+				sockets.remove(dest);
+				seqnums.remove(dest);
+			}
 		}
 	}
 	

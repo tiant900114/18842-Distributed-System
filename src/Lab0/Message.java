@@ -3,7 +3,7 @@ package Lab0;
 import java.io.Serializable; 
 
 public class Message implements Serializable {
-	private int seqnum = 0;
+	private int seqnum;
 	private String src;
 	private String dest;
 	private String kind;

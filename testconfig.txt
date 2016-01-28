@@ -9,7 +9,7 @@
 configuration:
 - name: alice
   ip: 127.0.0.1
-  port: 12344		#This is the incoming port on which MP will listen
+  port: 12377		#This is the incoming port on which MP will listen
 #May be changed for further communication as usual
 - name: bob
   ip: 127.0.0.1
