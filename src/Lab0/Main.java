@@ -18,7 +18,7 @@ public class Main {
 			s.useDelimiter("\\Z");
 			String content = s.next();
 			s.close();
-			FileOutputStream out = new FileOutputStream(filename);
+			FileOutputStream out = new FileOutputStream(filename, false);
 			out.write(content.getBytes());
 			out.close();
 		} catch (Exception e) {
