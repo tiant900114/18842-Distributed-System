@@ -20,7 +20,7 @@ public class MessagePasser {
 	Queue<delayedQueueObject> delayedMessages = new LinkedList<delayedQueueObject>();
 	Queue<delayedQueueObject> rcvDelayedMessages = new LinkedList<delayedQueueObject>();
 	
-	
+	boolean getFromDelayQueue = false;
 	Map<String, Node> hosts = new HashMap<String, Node>();
 	
 	
@@ -150,11 +150,25 @@ public class MessagePasser {
 			System.out.println("Unknown host " + dest);
 		}
 		else {
-			delayedQueueObject dqo = new delayedQueueObject();
-			dqo.delayedMsg = message;
-			dqo.destination = dest;
-			delayedMessages.add(dqo);			
+			delayedQueueObject dqo;
 			int seqnum;
+			seqnum = seqnums.get(dest);
+			message.set_seqNum(seqnum);
+			message.set_source(self);
+			seqnums.put(dest, seqnum+1);
+
+			try {
+				OutputStream out = sockets.get(dest).getOutputStream();
+				ObjectOutputStream os = new ObjectOutputStream(out);
+				os.writeObject(message);
+				os.flush();
+			} catch (Exception e) {
+				System.out.println("Unable to send message to " + dest + ", try again later.");
+				sockets.remove(dest);
+				seqnums.remove(dest);
+			}				
+
+			
 			while(!delayedMessages.isEmpty()){
 				dqo = delayedMessages.poll();
 				Message currMsg = dqo.delayedMsg;
@@ -179,7 +193,15 @@ public class MessagePasser {
 	}
 	
 	public Message receive() {
-
+		
+		if(rcvDelayedMessages.isEmpty()){
+			getFromDelayQueue = false;
+		}
+		else if(getFromDelayQueue == true){
+			return rcvDelayedMessages.poll().delayedMsg;
+		}
+		
+		Message currMsg = null;
 		for(Map m: recvRules){
 			String action = "";
 			String src = "";
@@ -207,7 +229,8 @@ public class MessagePasser {
 			}
 			catch(Exception e){}
 
-			Message currMsg = null;
+			// poll current message from receive buffer (queue)
+			// Message currMsg = null;
 			if (!q.isEmpty())
 				currMsg = q.poll();
 			else
@@ -223,11 +246,26 @@ public class MessagePasser {
 					return null;
 				}
 			}
+			
+			if(action.equals("drop")){
+				if(src.equals(msgSrc)){
+					if(seqNo == currMsg.get_seq_no()){
+						return null;
+					}
+				}
+			}
+			
+			if(action.equals("dropAfter")){
+				if(src.equals(msgSrc)){
+					if(seqNo > currMsg.get_seq_no()){
+						return null;
+					}
+				}
+			}	
 		}
 
-		
-		
-		return m;
+		getFromDelayQueue = true;
+		return currMsg;
 	}
 }
 

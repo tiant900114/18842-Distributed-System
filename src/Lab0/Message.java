@@ -40,4 +40,7 @@ public class Message implements Serializable {
 	{
 		return src;
 	}
+	public int get_seq_no(){
+		return seqnum;
+	}
 }
