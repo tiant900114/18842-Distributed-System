@@ -9,35 +9,33 @@ public class Message implements Serializable {
 	private String kind;
 	private Object data;
 	
-	public Message(String dest, String kind, Object data)
-	{
+	public Message(String dest, String kind, Object data) {
 		this.dest = dest;
 		this.kind = kind;
 		this.data = data;
 	}
 	
-	public void set_source(String source)
-	{
+	public String get_kind(){
+		return kind;
+	}
+	
+	public void set_source(String source) {
 		src = source;
 	}
 	
-	public void set_seqNum(int sequenceNumber)
-	{
+	public void set_seqNum(int sequenceNumber) {
 		seqnum = sequenceNumber;
 	}
 	
-	public String get_dest()
-	{
+	public String get_dest() {
 		return dest;
 	}
 	
-	public String get_data()
-	{
+	public String get_data() {
 		return (String)data;
 	}
 	
-	public String get_src()
-	{
+	public String get_src() {
 		return src;
 	}
 	public int get_seq_no(){

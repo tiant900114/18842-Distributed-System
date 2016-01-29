@@ -89,6 +89,7 @@ public class MessagePasser {
 	public void send(Message message)
 	{	
 		String dest = message.get_dest();
+		String msg_kind = message.get_kind();
 		// send rules
 
 		for(Map m: sendRules){
@@ -123,10 +124,12 @@ public class MessagePasser {
 			if(action.equals("drop")){
 				if(src.equals(self)){
 					if(dst.equals(dest)){
-						if(seqNo == seqnums.get(dest)){
-							System.out.println("seqNo"+seqNo);
-							System.out.println("seqnums.get(dest)"+seqnums.get(dest));
-							return;
+						if(kind == msg_kind){
+							if(seqNo == seqnums.get(dest)){
+								System.out.println("seqNo"+seqNo);
+								System.out.println("seqnums.get(dest)"+seqnums.get(dest));
+								return;
+							}							
 						}
 					}
 				}
@@ -134,8 +137,10 @@ public class MessagePasser {
 			
 			if(action.equals("dropAfter")){
 				if(src.equals(self)){
-					if(seqNo < seqnums.get(dest)){
-						return;
+					if(kind == msg_kind){
+						if(seqNo < seqnums.get(dest)){
+							return;
+						}						
 					}
 				}
 			}
@@ -152,7 +157,8 @@ public class MessagePasser {
 		}
 		
 		if (!sockets.containsKey(dest)) {
-			System.out.println("Unknown host " + dest);
+			System.out.println();
+			System.out.println("Unknown Host " + dest);
 		}
 		else {
 			delayedQueueObject dqo;
