@@ -15,7 +15,7 @@ public class WorkerThread implements Runnable {
 
 	public WorkerThread(Socket s, ConcurrentLinkedQueue<Message> q, ConcurrentMap<String, Socket> sockets, ConcurrentMap<String, Integer> seqnums)
 	{
-		System.out.println("Worker Thread is created");
+		//System.out.println("Worker Thread is created");
 		clientSocket = s;
 		this.q = q;
 		this.sockets = sockets;
@@ -50,7 +50,7 @@ public class WorkerThread implements Runnable {
 				q.add(m);
 			}
 		} catch (Exception e) {
-			 System.out.println("Unable to receive message");
+			 System.out.println(name+" has exited!");
 		}
 		
 		try {

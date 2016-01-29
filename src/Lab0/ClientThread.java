@@ -37,6 +37,7 @@ public class ClientThread implements Runnable{
 		while (!sockets.containsKey(name)) {
 			try {
 				s = new Socket(ip, port);
+				System.out.println("Connection with " + name + " established.");
 				sockets.putIfAbsent(name, s);
 				seqnums.putIfAbsent(name, 0);
 			} catch (Exception e) {
@@ -69,7 +70,7 @@ public class ClientThread implements Runnable{
 				q.add(m);
 			}
 		} catch (Exception e) {
-			
+			System.out.println(name + " has exited.");
 		}
 	}
 }

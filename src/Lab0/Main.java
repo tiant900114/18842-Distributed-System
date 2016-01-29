@@ -43,6 +43,12 @@ public class Main {
 		
 		HashSet<String> kindSet = new HashSet<>(Arrays.asList("Ack", "Reply"));
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			System.out.println("main thread is too hyper to sleep.");
+		}
 		while (true) {
 			System.out.println();
 			System.out.println(self+": what do you want to do?");

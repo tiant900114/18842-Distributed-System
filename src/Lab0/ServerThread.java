@@ -32,7 +32,7 @@ public class ServerThread implements Runnable {
 		 try {
 			 while (true) {
 				 Socket clientSocket = socket.accept();				 
-				 System.out.println("New connection accepted.");
+				 //System.out.println("New connection accepted.");
 				 WorkerThread wt = new WorkerThread(clientSocket, q, sockets, seqnums);
 				 new Thread(wt).start();
 			 }
