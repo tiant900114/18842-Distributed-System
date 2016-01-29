@@ -90,6 +90,7 @@ public class MessagePasser {
 	{	
 		String dest = message.get_dest();
 		// send rules
+
 		for(Map m: sendRules){
 			String action = "";
 			String src = "";
@@ -113,14 +114,18 @@ public class MessagePasser {
 			}
 			catch(Exception e){}
 			try{
-				seqNo = (int)m.get("seqNo");
+				seqNo = (int)m.get("seqNum");
 			}
-			catch(Exception e){}
+			catch(Exception e){
+				seqNo = -1;
+			}
 			
 			if(action.equals("drop")){
 				if(src.equals(self)){
 					if(dst.equals(dest)){
 						if(seqNo == seqnums.get(dest)){
+							System.out.println("seqNo"+seqNo);
+							System.out.println("seqnums.get(dest)"+seqnums.get(dest));
 							return;
 						}
 					}
@@ -129,7 +134,7 @@ public class MessagePasser {
 			
 			if(action.equals("dropAfter")){
 				if(src.equals(self)){
-					if(seqNo > seqnums.get(dest)){
+					if(seqNo < seqnums.get(dest)){
 						return;
 					}
 				}
